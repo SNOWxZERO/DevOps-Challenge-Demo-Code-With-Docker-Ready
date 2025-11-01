@@ -49,6 +49,61 @@ export $(cat .env | xargs) && python hello.py
 
 Although you don't have to export the environment variables that way. :wink:
 
+### Docker
+
+You can run this application in Docker. There are two recommended ways:
+
+- Use docker-compose (recommended) — this will start a Redis service and the app together.
+- Use plain docker (you must run a Redis container or point the app at an external Redis).
+
+Examples:
+
+1) Start with docker-compose (recommended):
+
+```bash
+# build images and start services (app + redis)
+docker-compose up --build
+
+# run in background
+docker-compose up -d --build
+
+# stop and remove containers
+docker-compose down
+```
+
+2) Using docker only (manual Redis) — creates a user network, starts Redis, builds and runs the app:
+
+```bash
+# create a network for the containers
+docker network create demo-net
+
+# start a Redis container on that network
+docker run -d --name demo_redis --network demo-net redis:7-alpine
+
+# build the app image
+docker build -t devops-challenge-demo .
+
+# run the app container on the same network and publish the port (Dockerfile defaults to PORT=8888)
+docker run --rm --name demo_app --network demo-net -p 8888:8888 devops-challenge-demo
+```
+
+3) Quick one-container run (if you have an external Redis and/or an `.env` file):
+
+```bash
+# use an env file (if present) to provide HOST/PORT/REDIS_* values
+docker build -t devops-challenge-demo .
+docker run --rm -p 8888:8888 --env-file .env devops-challenge-demo
+
+# or pass env values directly
+docker run --rm -p 8888:8888 -e PORT=8888 -e HOST=0.0.0.0 \
+ -e REDIS_HOST=redis -e REDIS_PORT=6379 -e REDIS_DB=0 devops-challenge-demo
+```
+
+Notes:
+
+- The `Dockerfile` sets sensible defaults (PORT=8888, HOST=0.0.0.0, REDIS_HOST=redis). If you use `docker-compose` the app will be able to reach the Redis service using the hostname `redis`.
+- If you run the app container alone, ensure a Redis service is reachable and set `REDIS_HOST`/`REDIS_PORT` appropriately.
+
 ### Static files
 
 - Static files are located in `static/` folder.
